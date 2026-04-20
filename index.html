@@ -12,81 +12,49 @@
             background-color: #F4F4F4;
             color: #222;
             margin: 0;
-            overflow-x: hidden;
+            overflow: hidden;
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* 隐藏滚动条 */
-        ::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        
+        .fade-in { animation: fadeIn 0.8s ease-out forwards; }
+        .fade-out { animation: fadeOut 0.5s ease-in forwards; }
 
-        .fade-in {
-            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; pointer-events: none; } }
 
-        .fade-out {
-            animation: fadeOut 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; pointer-events: none; }
-        }
-
-        /* 自定义滑块高级样式 */
-        input[type=range] {
-            -webkit-appearance: none;
-            width: 100%;
-            background: transparent;
-        }
+        /* 滑块样式优化 */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
         input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
-            background: #000;
-            border: 4px solid #fff;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-            margin-top: -9px;
+            -webkit-appearance: none; width: 22px; height: 22px;
+            background: #000; border: 4px solid #fff; border-radius: 50%;
+            cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2); margin-top: -10px;
         }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 2px;
-            background: #E5E7EB;
-        }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 2px; background: #ddd; }
 
         .step-content { display: none; }
         .step-content.active { display: block; }
-        
-        /* 针对微信视频的特殊处理 */
-        video::-webkit-media-controls { display:none !important; }
     </style>
 </head>
-<body class="hide-scrollbar">
+<body class="bg-[#F4F4F4]">
 
-    <!-- 1. NFC 触发屏 -->
-    <div id="start-screen" class="fixed inset-0 z-50 bg-[#030604] flex flex-col items-center justify-center transition-opacity duration-1000">
-        <div class="w-16 h-16 border border-[#d4af37]/50 rounded-full flex items-center justify-center mb-8 bg-[#d4af37]/5">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2C6 2 6 22 6 22M10 5C10 5 10 19 10 19M14 8C14 8 14 16 14 16M18 11C18 11 18 13 18 13"></path></svg>
+    <!-- 1. 入口屏 -->
+    <div id="start-screen" class="fixed inset-0 z-50 bg-[#030604] flex flex-col items-center justify-center">
+        <div class="mb-10 opacity-80">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="1"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
         </div>
-        <button onclick="startVideo()" class="bg-gradient-to-br from-[#d4af37] to-[#aa8c2c] text-white px-10 py-4 rounded-full text-sm tracking-[0.3em] shadow-[0_10px_30px_rgba(212,175,55,0.2)] active:scale-95 transition-all">
-            触碰开启 AR 溯源
+        <button onclick="handleStart()" class="bg-[#d4af37] text-white px-12 py-4 rounded-full text-sm tracking-[0.4em] active:scale-95 transition-transform shadow-lg">
+            开启 AR 溯源
         </button>
-        <p id="loading-hint" class="text-[#d4af37]/40 text-[10px] tracking-[0.2em] mt-6 uppercase">DETERMINANT</p>
+        <p class="text-[#d4af37]/40 text-[10px] mt-8 tracking-widest uppercase">Tap to Experience</p>
     </div>
 
-    <!-- 2. 全屏 AR 视频播放器 -->
-    <div id="video-screen" class="fixed inset-0 z-40 bg-black hidden flex-col items-center justify-center overflow-hidden">
-        <!-- 视频容器：使用同目录下的本地文件引用 -->
+    <!-- 2. 全屏视频播放 -->
+    <div id="video-screen" class="fixed inset-0 z-40 bg-black hidden items-center justify-center overflow-hidden">
         <video 
             id="ar-video" 
-            class="w-[90%] max-w-sm h-[80vh] object-contain" 
+            class="w-full h-full object-cover"
             playsinline 
             webkit-playsinline 
             x5-playsinline
@@ -94,218 +62,157 @@
             preload="auto"
             muted
         >
-            <!-- 已经修改为相对路径，访问更快 -->
+            <!-- 优先使用你提供的新压缩版链接 -->
+            <source src="https://github.com/kristenkwan721-art/vid/raw/refs/heads/main/vidproj.mp4" type="video/mp4">
+            <!-- 备选：如果上面的链接失效，尝试读取根目录下的文件 -->
             <source src="ar-animation.mp4" type="video/mp4">
-            您的浏览器不支持视频播放。
+            您的手机暂不支持此视频格式。
         </video>
-        
-        <div id="mute-tip" class="absolute top-20 text-[#d4af37] text-[10px] tracking-widest opacity-0 transition-opacity">
-            点击画面取消静音
+
+        <div id="video-ui" class="absolute inset-0 flex flex-col justify-between p-10 pointer-events-none">
+            <div class="text-[#d4af37] text-[10px] tracking-widest text-center mt-10">DETERMINANT AR ANIMATION</div>
+            <div class="flex justify-center mb-10">
+                <button onclick="skipVideo()" class="pointer-events-auto text-white/40 text-[10px] tracking-widest border-b border-white/20 pb-1">SKIP 跳过播放</button>
+            </div>
         </div>
-        
-        <button onclick="skipVideo()" class="absolute bottom-10 text-white/60 text-[10px] tracking-[0.3em] uppercase border-b border-white/30 pb-1 z-50">
-            跳过 SKIP →
-        </button>
     </div>
 
     <!-- 3. AI 定制主程序 -->
-    <div id="main-app" class="hidden min-h-screen flex justify-center py-0 sm:py-10 bg-[#F4F4F4]">
-        <div class="w-full max-w-md bg-white sm:shadow-2xl flex flex-col min-h-screen sm:min-h-0 relative">
+    <div id="main-app" class="hidden min-h-screen bg-white max-w-md mx-auto relative flex flex-col">
+        <header class="p-8 pt-12 border-b border-gray-50 flex justify-between items-end">
+            <div>
+                <h1 class="text-xl font-bold tracking-[0.3em]">DETERMINANT</h1>
+                <p class="text-[9px] text-gray-400 mt-1 uppercase tracking-widest">AI Customization</p>
+            </div>
+            <div id="step-num" class="text-[10px] text-gray-300 font-bold">1/3</div>
+        </header>
+
+        <main class="flex-1 p-8 overflow-y-auto hide-scrollbar">
+            <!-- 步骤 1 -->
+            <div id="step-1" class="step-content active fade-in">
+                <h2 class="text-lg font-medium mb-10">身材数字化</h2>
+                <div class="space-y-12">
+                    <div class="flex gap-8">
+                        <div class="flex-1 border-b border-black pb-2">
+                            <label class="text-[10px] text-gray-400 uppercase">身高 CM</label>
+                            <input type="number" id="height" value="175" class="w-full text-xl font-light outline-none bg-transparent mt-2">
+                        </div>
+                        <div class="flex-1 border-b border-black pb-2">
+                            <label class="text-[10px] text-gray-400 uppercase">体重 KG</label>
+                            <input type="number" id="weight" value="70" class="w-full text-xl font-light outline-none bg-transparent mt-2">
+                        </div>
+                    </div>
+                    <div class="space-y-8">
+                        <div>
+                            <div class="flex justify-between items-end mb-4">
+                                <label class="text-[10px] text-gray-400 uppercase">胸围</label>
+                                <span class="text-sm font-medium"><span id="val-bust">98</span> cm</span>
+                            </div>
+                            <input type="range" id="bust" min="70" max="130" value="98" oninput="updateRange('bust')">
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-end mb-4">
+                                <label class="text-[10px] text-gray-400 uppercase">腰围</label>
+                                <span class="text-sm font-medium"><span id="val-waist">82</span> cm</span>
+                            </div>
+                            <input type="range" id="waist" min="60" max="120" value="82" oninput="updateRange('waist')">
+                        </div>
+                    </div>
+                </div>
+                <button onclick="nextStep(2)" class="w-full mt-16 bg-black text-white py-5 text-[11px] font-bold tracking-[0.2em]">CONTINUE</button>
+            </div>
+
+            <!-- 步骤 2 -->
+            <div id="step-2" class="step-content fade-in">
+                 <h2 class="text-lg font-medium mb-10">色彩测试</h2>
+                 <div class="grid grid-cols-1 gap-4">
+                    <div onclick="setTone('warm', this)" class="p-6 border border-gray-100 rounded-sm active:bg-gray-50 transition-colors">暖色调 Warm</div>
+                    <div onclick="setTone('cool', this)" class="p-6 border border-gray-100 rounded-sm active:bg-gray-50 transition-colors">冷色调 Cool</div>
+                 </div>
+                 <button onclick="nextStep(3)" class="w-full mt-16 bg-black text-white py-5 text-[11px] font-bold tracking-[0.2em]">NEXT</button>
+            </div>
+
+            <!-- 步骤 3 -->
+            <div id="step-3" class="step-content fade-in">
+                 <h2 class="text-lg font-medium mb-10">正在生成您的专属报告...</h2>
+                 <div class="h-1 bg-gray-100 w-full overflow-hidden mt-4">
+                     <div class="bg-black h-full w-1/3 animate-[loading_2s_ease-in-out_infinite]"></div>
+                 </div>
+                 <style>@keyframes loading { from { transform: translateX(-100%); } to { transform: translateX(300%); } }</style>
+                 <button onclick="showReport()" class="w-full mt-16 bg-black text-white py-5 text-[11px] font-bold tracking-[0.2em]">VIEW REPORT</button>
+            </div>
             
-            <div class="pt-14 pb-6 px-10 border-b border-gray-100 flex justify-between items-end bg-white sticky top-0 z-20">
-                <div>
-                    <h1 class="text-lg font-bold tracking-[0.4em] text-black uppercase">DETERMINANT</h1>
-                    <p class="text-[9px] text-gray-400 uppercase tracking-widest mt-1">AI Bespoke Experience</p>
-                </div>
-                <div id="step-indicator" class="text-[10px] text-gray-300 font-bold">1/3</div>
+            <!-- 报告页 -->
+            <div id="step-report" class="step-content fade-in pb-20 text-center">
+                 <p class="text-gray-400 text-[10px] mb-4">YOUR RESULTS</p>
+                 <h3 class="text-2xl font-light mb-10">H型均称身形</h3>
+                 <div class="bg-gray-50 p-6 text-xs leading-loose text-left text-gray-500">
+                     根据AI分析，您属于标准身形。建议选择十如仕 Slim Fit 系列，该系列采用DP100免烫技术与100支双股棉，完美贴合身形的同时保持全天候挺括。
+                 </div>
+                 <button onclick="location.reload()" class="mt-10 text-[10px] text-gray-400 underline tracking-widest uppercase">Restart</button>
             </div>
-
-            <div class="flex-1 px-10 py-10 overflow-y-auto hide-scrollbar">
-                <!-- 步骤 1 -->
-                <div id="step-1" class="step-content active fade-in">
-                    <h2 class="text-xl font-medium mb-1 text-black">身材数字化</h2>
-                    <p class="text-[11px] text-gray-400 mb-12 uppercase tracking-wider">Body Data Digitalization</p>
-                    <div class="space-y-10">
-                        <div class="flex gap-10">
-                            <div class="flex-1 border-b border-black pb-2">
-                                <label class="block text-[10px] text-gray-400 mb-2 uppercase">身高 Height</label>
-                                <input type="number" id="height" value="175" class="w-full text-2xl font-light outline-none bg-transparent">
-                            </div>
-                            <div class="flex-1 border-b border-black pb-2">
-                                <label class="block text-[10px] text-gray-400 mb-2 uppercase">体重 Weight</label>
-                                <input type="number" id="weight" value="70" class="w-full text-2xl font-light outline-none bg-transparent">
-                            </div>
-                        </div>
-                        <div class="space-y-8">
-                            <div>
-                                <div class="flex justify-between items-end mb-3">
-                                    <label class="text-[10px] text-gray-400 uppercase">胸围</label>
-                                    <span class="text-lg font-light"><span id="val-bust">98</span><span class="text-[10px] ml-1">cm</span></span>
-                                </div>
-                                <input type="range" id="bust" min="60" max="140" value="98" oninput="updateRange('bust')">
-                            </div>
-                            <div>
-                                <div class="flex justify-between items-end mb-3">
-                                    <label class="text-[10px] text-gray-400 uppercase">腰围</label>
-                                    <span class="text-lg font-light"><span id="val-waist">82</span><span class="text-[10px] ml-1">cm</span></span>
-                                </div>
-                                <input type="range" id="waist" min="60" max="140" value="82" oninput="updateRange('waist')">
-                            </div>
-                            <div>
-                                <div class="flex justify-between items-end mb-3">
-                                    <label class="text-[10px] text-gray-400 uppercase">臀围</label>
-                                    <span class="text-lg font-light"><span id="val-hips">96</span><span class="text-[10px] ml-1">cm</span></span>
-                                </div>
-                                <input type="range" id="hips" min="60" max="140" value="96" oninput="updateRange('hips')">
-                            </div>
-                        </div>
-                    </div>
-                    <button onclick="goToStep(2)" class="w-full mt-16 bg-black text-white py-5 text-[11px] tracking-[0.3em] font-bold active:bg-gray-900 transition-colors">CONTINUE</button>
-                </div>
-
-                <!-- 步骤 2 -->
-                <div id="step-2" class="step-content fade-in">
-                    <h2 class="text-xl font-medium mb-1 text-black">色彩美学</h2>
-                    <p class="text-[11px] text-gray-400 mb-12 uppercase tracking-wider">Color Diagnostics</p>
-                    <div class="space-y-4">
-                        <div onclick="selectTone('warm', this)" class="tone-card p-6 border border-gray-100 flex items-center gap-6 cursor-pointer hover:bg-gray-50 active:scale-[0.98] transition-all">
-                            <div class="w-10 h-10 rounded-full bg-[#D6C5B0]"></div>
-                            <div class="flex-1">
-                                <h3 class="text-xs font-bold tracking-wider">暖基调 Warm</h3>
-                                <p class="text-[10px] text-gray-400 mt-1">手腕血管呈淡绿色/橄榄色</p>
-                            </div>
-                        </div>
-                        <div onclick="selectTone('cool', this)" class="tone-card p-6 border border-gray-100 flex items-center gap-6 cursor-pointer hover:bg-gray-50 active:scale-[0.98] transition-all">
-                            <div class="w-10 h-10 rounded-full bg-[#B0BCC2]"></div>
-                            <div class="flex-1">
-                                <h3 class="text-xs font-bold tracking-wider">冷基调 Cool</h3>
-                                <p class="text-[10px] text-gray-400 mt-1">手腕血管呈蓝色/紫色</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex gap-4 mt-16">
-                        <button onclick="goToStep(1)" class="px-6 py-5 border border-gray-100 text-gray-400">←</button>
-                        <button onclick="goToStep(3)" id="tone-next" disabled class="flex-1 py-5 text-[11px] tracking-[0.3em] font-bold bg-gray-100 text-gray-300 transition-all">NEXT STEP</button>
-                    </div>
-                </div>
-
-                <!-- 步骤 3 -->
-                <div id="step-3" class="step-content fade-in">
-                    <h2 class="text-xl font-medium mb-1 text-black">季节语境</h2>
-                    <p class="text-[11px] text-gray-400 mb-12 uppercase tracking-wider">Seasonal Context</p>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div onclick="selectSeason('spring', this)" class="season-card p-10 border border-gray-100 text-center cursor-pointer bg-black text-white border-black active:scale-95 transition-all">
-                            <div class="text-[10px] font-bold tracking-[0.2em]">SPRING</div>
-                        </div>
-                        <div onclick="selectSeason('summer', this)" class="season-card p-10 border border-gray-100 text-center cursor-pointer active:scale-95 transition-all">
-                            <div class="text-[10px] font-bold tracking-[0.2em]">SUMMER</div>
-                        </div>
-                    </div>
-                    <div class="flex gap-4 mt-16">
-                        <button onclick="goToStep(2)" class="px-6 py-5 border border-gray-100 text-gray-400">←</button>
-                        <button onclick="generateReport()" class="flex-1 bg-black text-white py-5 text-[11px] tracking-[0.3em] font-bold active:bg-gray-900 transition-colors">GENERATE REPORT</button>
-                    </div>
-                </div>
-
-                <!-- 步骤 4 (报告) -->
-                <div id="step-4" class="step-content fade-in pb-10">
-                    <div class="text-center mb-12">
-                        <p class="text-[9px] text-gray-400 uppercase tracking-[0.3em] mb-4">Diagnosis Report</p>
-                        <h2 id="res-shape" class="text-2xl font-light tracking-widest text-black">-</h2>
-                    </div>
-                    <div class="space-y-12" id="report-body"></div>
-                    <button onclick="resetApp()" class="w-full mt-12 py-5 text-[9px] tracking-[0.3em] font-bold text-gray-400 border-t border-gray-100 uppercase">
-                        Re-Diagnose 重新测试
-                    </button>
-                </div>
-            </div>
-        </div>
+        </main>
     </div>
 
     <script>
-        const startScreen = document.getElementById('start-screen');
-        const videoScreen = document.getElementById('video-screen');
-        const mainApp = document.getElementById('main-app');
         const video = document.getElementById('ar-video');
-        const loadingHint = document.getElementById('loading-hint');
-
-        let videoFailTimeout;
-
-        function startVideo() {
-            loadingHint.innerText = "PREPARING AR EXPERIENCE...";
-            video.muted = true; 
-            
-            startScreen.classList.add('fade-out');
-            
+        
+        function handleStart() {
+            document.getElementById('start-screen').classList.add('fade-out');
             setTimeout(() => {
-                startScreen.style.display = 'none';
-                videoScreen.classList.remove('hidden');
-                videoScreen.classList.add('flex');
+                document.getElementById('start-screen').style.display = 'none';
+                document.getElementById('video-screen').classList.remove('hidden');
+                document.getElementById('video-screen').classList.add('flex');
                 
-                // 3秒容错：如果视频因为网络原因加载不出，直接跳到程序
-                videoFailTimeout = setTimeout(() => {
-                    if (video.paused) { showApp(); }
-                }, 3000);
-
+                video.load(); 
                 const playPromise = video.play();
+
                 if (playPromise !== undefined) {
-                    playPromise.then(_ => {
-                        clearTimeout(videoFailTimeout);
-                        document.getElementById('mute-tip').style.opacity = "1";
-                        setTimeout(() => document.getElementById('mute-tip').style.opacity = "0", 3000);
-                    }).catch(err => {
-                        console.log("Auto-play blocked or error:", err);
-                        showApp();
+                    playPromise.catch(error => {
+                        console.log("Playback failed:", error);
+                        // 播放失败保护：3秒后自动进入应用
+                        setTimeout(skipVideo, 3000);
                     });
                 }
-            }, 800);
+
+                // 终极保护：如果5秒后视频还在加载/卡住，强制进入
+                setTimeout(() => {
+                    if (video.paused && !document.getElementById('video-screen').classList.contains('hidden')) {
+                        skipVideo();
+                    }
+                }, 5000);
+            }, 500);
         }
 
-        video.addEventListener('click', () => { video.muted = !video.muted; });
-        video.addEventListener('ended', showApp);
-        function skipVideo() { video.pause(); showApp(); }
+        video.addEventListener('ended', skipVideo);
 
-        function showApp() {
-            clearTimeout(videoFailTimeout);
-            videoScreen.classList.remove('flex');
-            videoScreen.classList.add('hidden');
-            mainApp.classList.remove('hidden');
-            mainApp.classList.add('fade-in');
+        function skipVideo() {
+            document.getElementById('video-screen').classList.add('fade-out');
+            setTimeout(() => {
+                document.getElementById('video-screen').style.display = 'none';
+                document.getElementById('main-app').classList.remove('hidden');
+                document.getElementById('main-app').classList.add('fade-in');
+            }, 500);
         }
 
-        let selectedTone = '';
-        let selectedSeason = 'spring';
         function updateRange(id) { document.getElementById('val-' + id).innerText = document.getElementById(id).value; }
-        function goToStep(n) {
+        
+        function nextStep(n) {
             document.querySelectorAll('.step-content').forEach(s => s.classList.remove('active'));
             document.getElementById('step-' + n).classList.add('active');
-            document.getElementById('step-indicator').innerText = n < 4 ? n + '/3' : 'REPORT';
+            document.getElementById('step-num').innerText = n + '/3';
         }
-        function selectTone(tone, element) {
-            selectedTone = tone;
-            document.querySelectorAll('.tone-card').forEach(c => c.classList.remove('border-black', 'bg-[#FAFAFA]'));
-            element.classList.add('border-black', 'bg-[#FAFAFA]');
-            const nextBtn = document.getElementById('tone-next');
-            nextBtn.disabled = false;
-            nextBtn.classList.replace('bg-gray-100', 'bg-black');
-            nextBtn.classList.replace('text-gray-300', 'text-white');
+
+        function setTone(t, el) {
+            document.querySelectorAll('#step-2 div').forEach(d => d.classList.remove('border-black', 'bg-gray-50'));
+            el.classList.add('border-black', 'bg-gray-50');
         }
-        function selectSeason(s, element) {
-            selectedSeason = s;
-            document.querySelectorAll('.season-card').forEach(c => c.classList.remove('bg-black', 'text-white', 'border-black'));
-            element.classList.add('bg-black', 'text-white', 'border-black');
+
+        function showReport() {
+            document.querySelectorAll('.step-content').forEach(s => s.classList.remove('active'));
+            document.getElementById('step-report').classList.add('active');
+            document.getElementById('step-num').innerText = 'RESULT';
         }
-        function generateReport() {
-            document.getElementById('res-shape').innerText = "H型 / 均称身形";
-            document.getElementById('report-body').innerHTML = `
-                <div class="bg-[#FAFAFA] p-6 border border-gray-50">
-                    <h3 class="text-[11px] font-bold uppercase mb-2">身形适配建议</h3>
-                    <p class="text-xs text-gray-500 leading-relaxed font-light">您的体态比例非常协调。推荐十如仕经典 Slim Fit 修身款，结合 100% 长绒棉面料，能完美贴合曲线且不失正式感。</p>
-                </div>
-            `;
-            goToStep(4);
-        }
-        function resetApp() { window.location.reload(); }
     </script>
 </body>
 </html>
